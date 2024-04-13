@@ -1,0 +1,62 @@
+#!/bin/bash
+
+check_ready() {
+    ready="0"
+    status_k3s="0"
+    while true; do
+    kube_pod=$(kubectl get -n $1 $2 | $3 | awk '{print $1}') && \
+    status_k3s=$(kubectl get $2 -n $1 $kube_pod -o $5="$6")
+    echo "$kube_pod : status == $status_k3s"
+    echo "$status_k3s" | grep -qi "$4" && echo "$7" && ready="1"
+    if [ "$ready" == "1" ]; then
+        break
+    fi
+    sleep 2
+    done
+}
+
+create_cluster() {
+    k3d cluster create --k3s-arg "--disable=traefik@server:0" --volume \
+    $(pwd)/install.yaml:/var/lib/rancher/k3s/server/manifests/install.yaml mycluster && \
+    echo "CREATE CLUSTER" && \
+    k3d kubeconfig get mycluster > .kubeconfig && \
+    check_ready "kube-system"\
+                "pod" \
+                "grep coredns" \
+                "true" \
+                "jsonpath" \
+                "{.status.containerStatuses.*.ready}" \
+                "COREDNS READY" && \
+    check_ready "argo" \
+                "pod" \
+                "grep argo-server" \
+                "true" \
+                "jsonpath" \
+                "{.status.containerStatuses.*.ready}" \
+                "ARGO WORKFLOWS READY"
+}
+
+check_workflow () {
+    check_ready "default" \
+                "workflow" \
+                "tail -n 1" \
+                "Succeeded" \
+                "go-template" \
+                '{{ index .metadata.labels "workflows.argoproj.io/phase" }}' \
+                "DONE"
+}
+
+drop_cluster() {
+      k3d cluster delete mycluster
+}
+
+setup_forward() {
+    kube_pod=$(kubectl get -n argo pods | grep argo-server | awk '{print $1}')
+    kubectl -n argo port-forward pods/$kube_pod 9000:2746
+}
+
+update() {
+	curl -Lo ./base/install.yaml \
+	https://github.com/argoproj/argo-workflows/releases/download/v3.5.5/install.yaml && \
+	kustomize build overlays/rbac/ > install.yaml
+}
