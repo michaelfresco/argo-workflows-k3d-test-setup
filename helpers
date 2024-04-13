@@ -1,5 +1,8 @@
 #!/bin/bash
 
+argo_version="v3.5.5"
+image_k3s="rancher/k3s:v1.27.5-k3s1"
+
 check_ready() {
     ready="0"
     status_k3s="0"
@@ -16,9 +19,11 @@ check_ready() {
 }
 
 create_cluster() {
-    k3d cluster create --k3s-arg "--disable=traefik@server:0" --volume \
-    $(pwd)/install.yaml:/var/lib/rancher/k3s/server/manifests/install.yaml mycluster && \
-    echo "CREATE CLUSTER" && \
+    k3d cluster create \
+        --k3s-arg "--disable=traefik@server:0" \
+        --volume $(pwd)/install.yaml:/var/lib/rancher/k3s/server/manifests/install.yaml \
+        --image $image_k3s \
+        mycluster && \
     k3d kubeconfig get mycluster > .kubeconfig && \
     check_ready "kube-system"\
                 "pod" \
@@ -57,6 +62,6 @@ setup_forward() {
 
 update() {
 	curl -Lo ./base/install.yaml \
-	https://github.com/argoproj/argo-workflows/releases/download/v3.5.5/install.yaml && \
+	https://github.com/argoproj/argo-workflows/releases/download/$argo_version/install.yaml && \
 	kustomize build overlays/rbac/ > install.yaml
 }
