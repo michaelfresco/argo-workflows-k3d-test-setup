@@ -5,12 +5,12 @@ image_k3s="rancher/k3s:v1.27.5-k3s1"
 
 check_ready() {
     ready="0"
-    status_k3s="0"
+    status="0"
     while true; do
-    kube_pod=$(kubectl get -n $1 $2 | $3 | awk '{print $1}') && \
-    status_k3s=$(kubectl get $2 -n $1 $kube_pod -o $5="$6")
-    echo "$kube_pod : status == $status_k3s"
-    echo "$status_k3s" | grep -qi "$4" && echo "$7" && ready="1"
+    kube_resource=$(kubectl get -n $1 $2 | $3 | awk '{print $1}') && \
+    status=$(kubectl get $2 -n $1 $kube_resource -o $5="$6")
+    echo "$kube_resource : status == $status"
+    echo "$status" | grep -qi "$4" && echo "$7" && ready="1"
     if [ "$ready" == "1" ]; then
         break
     fi
@@ -52,7 +52,7 @@ check_workflow () {
 }
 
 drop_cluster() {
-      k3d cluster delete mycluster
+    k3d cluster delete mycluster
 }
 
 setup_forward() {
@@ -61,7 +61,7 @@ setup_forward() {
 }
 
 update() {
-	curl -Lo ./base/install.yaml \
-	https://github.com/argoproj/argo-workflows/releases/download/$argo_version/install.yaml && \
-	kustomize build overlays/rbac/ > install.yaml
+    curl -Lo ./base/install.yaml \
+    https://github.com/argoproj/argo-workflows/releases/download/$argo_version/install.yaml && \
+    kustomize build overlays/rbac/ > install.yaml
 }
