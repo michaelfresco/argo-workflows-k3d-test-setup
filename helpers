@@ -7,8 +7,8 @@ check_ready() {
     ready="0"
     status="0"
     while true; do
-    kube_resource=$(kubectl get -n $1 $2 | $3 | awk '{print $1}') && \
-    status=$(kubectl get $2 -n $1 $kube_resource -o $5="$6")
+    kube_resource=$(kubectl --kubeconfig .kubeconfig get -n $1 $2 | $3 | awk '{print $1}') && \
+    status=$(kubectl --kubeconfig .kubeconfig get $2 -n $1 $kube_resource -o $5="$6")
     echo "$kube_resource : status == $status"
     echo "$status" | grep -qi "$4" && echo "$7" && ready="1"
     if [ "$ready" == "1" ]; then
@@ -56,8 +56,8 @@ drop_cluster() {
 }
 
 setup_forward() {
-    kube_pod=$(kubectl get -n argo pods | grep argo-server | awk '{print $1}')
-    kubectl -n argo port-forward pods/$kube_pod 9000:2746
+    kube_pod=$(kubectl --kubeconfig .kubeconfig get -n argo pods | grep argo-server | awk '{print $1}')
+    kubectl --kubeconfig .kubeconfig -n argo port-forward pods/$kube_pod 9000:2746
 }
 
 update() {

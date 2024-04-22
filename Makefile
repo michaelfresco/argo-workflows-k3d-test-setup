@@ -7,7 +7,7 @@ create-cluster:
 	source helpers && create_cluster
 
 test-workflow:
-	kubectl create -f $(flow)
+	kubectl --kubeconfig .kubeconfig create -f $(flow)
 	source helpers && check_workflow
 
 port-forward:
